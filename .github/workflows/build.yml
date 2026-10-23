@@ -1,0 +1,113 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, dev ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Work out the version
+        id: ver
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $v = $env:GITHUB_REF_NAME.TrimStart('v')
+          } else {
+            [xml]$p = Get-Content src/TeleTV/TeleTV.csproj
+            $v = $p.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version $v"
+
+      - name: Build TeleTV.exe
+        shell: pwsh
+        run: >
+          dotnet publish src/TeleTV/TeleTV.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=embedded
+          -p:Version=${{ steps.ver.outputs.version }} -o publish -nologo
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Build Setup.exe
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Qp "/DMyAppVersion=${{ steps.ver.outputs.version }}" "/DPublishDir=..\publish" installer\TeleTV.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item "dist\TeleTV-Setup-${{ steps.ver.outputs.version }}.exe" "dist\TeleTV-Setup.exe"
+          Get-ChildItem dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TeleTV-Setup-${{ steps.ver.outputs.version }}
+          path: dist/TeleTV-Setup.exe
+
+      - name: Is this a new version?
+        id: rel
+        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "v${{ steps.ver.outputs.version }}" --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { "new=false" >> $env:GITHUB_OUTPUT } else { "new=true" >> $env:GITHUB_OUTPUT }
+          $global:LASTEXITCODE = 0
+
+      - name: Write release notes
+        if: steps.rel.outputs.new == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $lines = Get-Content CHANGELOG.md
+          $notes = @()
+          $inside = $false
+          foreach ($l in $lines) {
+            if ($l -match '^## ') { if ($inside) { break }; if ($l -match [regex]::Escape($v)) { $inside = $true }; continue }
+            if ($inside) { $notes += $l }
+          }
+          $body = @(
+            "## Download",
+            "",
+            "**[TeleTV-Setup.exe](https://github.com/bhxuk/TeleTV/releases/download/v$v/TeleTV-Setup.exe)**, then double-click it. No admin rights needed.",
+            "",
+            "The first time it opens, TeleTV downloads Android TV straight from Google (about 2 GB). After that it opens in seconds.",
+            "",
+            "Windows may show ""Windows protected your PC"" because the installer isn't code-signed. Click **More info** and then **Run anyway**.",
+            "",
+            "## What's new",
+            ""
+          ) + $notes + @(
+            "",
+            "See the [user guide](https://github.com/bhxuk/TeleTV/blob/main/docs/USER-GUIDE.md) and the full [changelog](https://github.com/bhxuk/TeleTV/blob/main/CHANGELOG.md)."
+          )
+          Set-Content -Path release-notes.md -Value $body -Encoding utf8
+
+      - name: Publish release
+        if: steps.rel.outputs.new == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: TeleTV ${{ steps.ver.outputs.version }}
+          make_latest: true
+          files: dist/TeleTV-Setup.exe
+          body_path: release-notes.md
