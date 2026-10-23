@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeleTV for Windows</title>
+<meta name="description" content="Android TV in a Windows app. Install APKs from your PC, download apps with the built-in Downloader and drive it with your keyboard, mouse or TV remote.">
+<meta property="og:title" content="TeleTV for Windows">
+<meta property="og:description" content="Android TV, in a Windows app.">
+<meta property="og:image" content="https://bhxuk.github.io/TeleTV/images/icon.png">
+<meta name="theme-color" content="#0E1116">
+<link rel="icon" href="images/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1116;--deep:#08090C;--panel:#171B22;--panel2:#1E232C;--chrome:#1B1F27;--line:#262B35;--line2:#4A5363;
+  --text:#E6EAF0;--sub:#B8C0CC;--muted:#9AA4B2;--blue:#5AA9FF;--blue2:#8FB8F0;--orange:#E8A23A;--green:#3DD68C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;z-index:20;background:var(--orange);color:#111;padding:8px 14px;border-radius:10px}
+
+/* nav */
+.bar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;pointer-events:none}
+.bar nav{pointer-events:auto;display:flex;align-items:center;gap:6px;background:#000;border:1px solid rgba(255,255,255,.06);border-top:0;border-radius:0 0 22px 22px;padding:8px 8px 8px 16px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;text-decoration:none;margin-right:8px}
+.brand img{width:22px;height:22px}
+nav a.link{text-decoration:none;color:var(--muted);font-size:14px;font-weight:500;padding:8px 12px;border-radius:999px}
+nav a.link:hover{color:var(--text);background:rgba(255,255,255,.06)}
+nav a.get{text-decoration:none;background:var(--orange);color:#111;font-weight:700;font-size:14px;padding:8px 16px;border-radius:999px}
+@media (max-width:600px){nav a.link{display:none}}
+
+/* hero */
+.hero{text-align:center;padding:84px 0 0;position:relative}
+.hero h1{font-size:clamp(40px,7vw,72px);line-height:1.05;font-weight:800;letter-spacing:-.02em}
+.hero h1 span{color:var(--blue)}
+.hero p.lead{max-width:640px;margin:20px auto 0;color:var(--sub);font-size:19px}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.btn{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;padding:14px 26px;border-radius:12px;font-size:16px}
+.btn.primary{background:var(--orange);color:#111}
+.btn.ghost{border:1px solid var(--line2);color:var(--text)}
+.btn:hover{filter:brightness(1.07)}
+.small{color:var(--muted);font-size:14px;margin-top:14px}
+
+/* app window drawing */
+.shot{margin:56px auto 0;max-width:1000px;border-radius:12px;border:1px solid #2A2F3A;overflow:hidden;background:var(--bg);box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.02);text-align:left}
+.tb{height:38px;display:flex;align-items:center;gap:4px;padding-left:12px;background:var(--chrome);border-bottom:1px solid var(--line);font-size:12.5px}
+.tb .name{font-weight:700;margin:0 12px 0 6px}
+.tb .tab{padding:5px 11px;border-radius:6px;color:var(--sub)}
+.tb .tab.on{background:#2A3140;color:#fff}
+.tb .sp{flex:1}
+.tb .st{display:flex;align-items:center;gap:6px;color:var(--sub);margin-right:14px}
+.tb .st i{width:8px;height:8px;border-radius:50%;background:var(--green);display:block}
+.tb .ctl{width:40px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.tv{padding:24px 36px 26px;display:flex;flex-direction:column;gap:20px}
+.tv .top{display:flex;justify-content:space-between;align-items:center}
+.tv .pills{display:flex;gap:6px}
+.tv .pill{padding:6px 16px;border-radius:999px;font-size:13px;color:var(--sub)}
+.tv .pill.on{background:#fff;color:var(--bg);font-weight:600}
+.tv .clock{font-weight:600;font-size:14px}
+.tv .hero2{height:190px;border-radius:14px;background:#1A2333;display:flex;overflow:hidden}
+.tv .hero2 .t{flex:1;padding:28px 32px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.tv .hero2 .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tv .hero2 .h{font-size:28px;font-weight:800}
+.tv .hero2 .s{font-size:13px;color:var(--sub)}
+.tv .hero2 .art{width:36%;background:#24314A;display:flex;align-items:center;justify-content:center}
+.tv h3{font-size:15px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}
+.tile{height:92px;border-radius:11px;display:flex;flex-direction:column;justify-content:flex-end;padding:11px;gap:6px;font-weight:600;font-size:13px;color:#fff}
+.tile.focus{box-shadow:0 0 0 3px #fff;transform:scale(1.05)}
+.tile svg{width:22px;height:22px}
+.tile.add{border:2px dashed var(--line2);color:var(--sub)}
+.sb{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--chrome);border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.tile:nth-child(n+5){display:none}.tb .tab:not(.on){display:none}.tv .hero2 .art{display:none}}
+
+/* sections */
+section{padding:96px 0 0}
+.eyebrow{color:var(--blue2);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h2{font-size:clamp(28px,4vw,40px);line-height:1.15;font-weight:800;letter-spacing:-.01em;margin-top:10px}
+.intro{color:var(--sub);max-width:640px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px}
+@media (max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+.card .ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.card .ic svg{width:22px;height:22px}
+.card h4{font-size:18px;font-weight:700}
+.card p{color:var(--sub);margin-top:6px;font-size:15.5px}
+
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px;counter-reset:s}
+@media (max-width:800px){.steps{grid-template-columns:1fr}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;counter-increment:s}
+.step::before{content:counter(s);display:flex;width:34px;height:34px;border-radius:50%;background:#172238;color:var(--blue);font-weight:800;align-items:center;justify-content:center;margin-bottom:14px}
+.step h4{font-size:17px}
+.step p{color:var(--sub);font-size:15px;margin-top:6px}
+
+table{width:100%;border-collapse:collapse;margin-top:28px;font-size:15.5px}
+td{padding:14px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:600;width:34%;padding-right:20px}
+td:last-child{color:var(--sub)}
+.keys kbd{display:inline-block;background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;padding:1px 8px;font-family:inherit;font-size:13.5px;color:var(--text)}
+
+details{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-top:12px}
+details summary{cursor:pointer;font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";float:right;color:var(--muted)}
+details[open] summary::after{content:"−"}
+details p{color:var(--sub);margin-top:10px;font-size:15.5px}
+
+.final{text-align:center;padding:110px 0 90px}
+footer{border-top:1px solid var(--line);padding:28px 0 40px;color:var(--muted);font-size:13.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer a{text-decoration:none}footer a:hover{color:var(--text)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:6px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="bar">
+  <nav aria-label="Main">
+    <a class="brand" href="#top"><img src="images/icon.png" alt="">TeleTV</a>
+    <a class="link" href="#features">Features</a>
+    <a class="link" href="#setup">Setup</a>
+    <a class="link" href="#controls">Controls</a>
+    <a class="link" href="#faq">Questions</a>
+    <a class="get" href="https://github.com/bhxuk/TeleTV/releases/latest/download/TeleTV-Setup.exe">Download</a>
+  </nav>
+</div>
+
+<main id="main">
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1>Android TV,<br><span>in a Windows app.</span></h1>
+    <p class="lead">Open TeleTV and you're looking at a real Android TV home screen. Drop in APKs from your PC, grab apps with the built-in Downloader and drive it all from the keyboard, the mouse or a TV remote.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/bhxuk/TeleTV/releases/latest/download/TeleTV-Setup.exe">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+        Download for Windows</a>
+      <a class="btn ghost" href="https://github.com/bhxuk/TeleTV">View on GitHub</a>
+    </div>
+    <p class="small">Free · Windows 10 and 11 · No admin rights needed</p>
+
+    <div class="shot" role="img" aria-label="The TeleTV window showing an Android TV home screen with a row of app tiles">
+      <div class="tb" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5AA9FF" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span class="name">TeleTV</span>
+        <span class="tab on">Home</span><span class="tab">Import APK</span><span class="tab">Downloader</span><span class="tab">Apps</span><span class="tab">Settings</span>
+        <span class="sp"></span>
+        <span class="st"><i></i>Android TV running</span>
+        <span class="ctl">&#9472;</span><span class="ctl">&#9633;</span><span class="ctl">&#10005;</span>
+      </div>
+      <div class="tv" aria-hidden="true">
+        <div class="top">
+          <div class="pills"><span class="pill on">For you</span><span class="pill">Apps</span><span class="pill">Library</span></div>
+          <span class="clock">20:41</span>
+        </div>
+        <div class="hero2">
+          <div class="t"><span class="k">Continue watching</span><span class="h">Media Player</span><span class="s">Imported APK · opened 2 hours ago</span></div>
+          <div class="art"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#8FB8F0" stroke-width="1.5" stroke-linejoin="round"><polygon points="8,5 19,12 8,19"/></svg></div>
+        </div>
+        <h3>Your apps</h3>
+        <div class="tiles">
+          <div class="tile focus" style="background:#E8A23A;color:#111"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Downloader</div>
+          <div class="tile" style="background:#2F6BC4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Browser</div>
+          <div class="tile" style="background:#B5473F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="8,5 19,12 8,19"/></svg>Media Player</div>
+          <div class="tile" style="background:#6A4BB8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Live TV</div>
+          <div class="tile" style="background:#3F7A47"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10H3z"/></svg>Files</div>
+          <div class="tile" style="background:#3C4452"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Settings</div>
+          <div class="tile add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Import APK</div>
+        </div>
+      </div>
+      <div class="sb" aria-hidden="true"><span>Arrow keys move · Enter selects · Esc goes back</span><span>Google TV 14 · 4 GB RAM</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <p class="eyebrow">What you get</p>
+    <h2>A whole TV box, without the box.</h2>
+    <p class="intro">TeleTV runs Google's own Android TV system in a normal window you can resize, snap or send full screen.</p>
+    <div class="grid">
+      <div class="card"><div class="ic" style="background:#172238;color:#5AA9FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><h4>Real Android TV</h4><p>Google TV with the Play Store, or plain Android TV if you'd rather. The same home screen, settings and apps as a TV box.</p></div>
+      <div class="card"><div class="ic" style="background:#2A2216;color:#E8A23A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg></div><h4>Import APKs</h4><p>Drag APK files onto the window or browse for them. They install straight into Android and open. Bundles (.apks, .xapk) work too.</p></div>
+      <div class="card"><div class="ic" style="background:#2A2216;color:#E8A23A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></div><h4>Built-in Downloader</h4><p>Type a web address or a direct APK link. When an app finishes downloading, press Install. Favourites remember your usual sites.</p></div>
+      <div class="card"><div class="ic" style="background:#16261E;color:#3DD68C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M12 14v2"/></svg></div><h4>Keyboard, mouse or remote</h4><p>Arrow keys are the D-pad, Esc is Back, Home is Home. Click and scroll inside apps. Bluetooth TV remotes just work.</p></div>
+      <div class="card"><div class="ic" style="background:#172238;color:#5AA9FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><h4>Opens in seconds</h4><p>Quick start saves where you were when TeleTV closes, so next time Android picks up instantly.</p></div>
+      <div class="card"><div class="ic" style="background:#1F1A2E;color:#A38BEA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></div><h4>Updates itself</h4><p>New versions of TeleTV install from inside the app, and Android updates come straight from Google in the background.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="wrap">
+    <p class="eyebrow">Setup</p>
+    <h2>Install, open, done.</h2>
+    <div class="steps">
+      <div class="step"><h4>Run TeleTV-Setup.exe</h4><p>A normal Windows installer. No admin rights needed.</p></div>
+      <div class="step"><h4>Let it fetch Android</h4><p>The first time, TeleTV downloads Android TV straight from Google (about 2 GB) and asks you to accept Google's licence.</p></div>
+      <div class="step"><h4>Start watching</h4><p>If Windows Hypervisor Platform is off, TeleTV switches it on and asks for one restart. After that it's straight in every time.</p></div>
+    </div>
+    <table>
+      <tr><td>Windows</td><td>Windows 10 (version 2004 or later) or Windows 11, 64-bit</td></tr>
+      <tr><td>Processor</td><td>Virtualisation switched on (Intel VT-x or AMD-V). Almost every PC from the last ten years has it.</td></tr>
+      <tr><td>Memory</td><td>8 GB or more. 16 GB is comfortable.</td></tr>
+      <tr><td>Space</td><td>About 10 GB for Android and your apps</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="controls">
+  <div class="wrap">
+    <p class="eyebrow">Controls</p>
+    <h2>Your keyboard is the remote.</h2>
+    <table class="keys">
+      <tr><td><kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&rarr;</kbd> <kbd>&darr;</kbd></td><td>Move around, like the D-pad</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Select</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Back</td></tr>
+      <tr><td><kbd>Home</kbd></td><td>Android TV home screen</td></tr>
+      <tr><td><kbd>F11</kbd></td><td>Full screen on and off</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>V</kbd></td><td>Paste text from Windows into Android</td></tr>
+      <tr><td>Media keys</td><td>Play, pause and skip, as on a remote</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <p class="eyebrow">Questions</p>
+    <h2>Good to know.</h2>
+    <details><summary>Where does Android come from?</summary><p>Straight from Google's servers, the same Android emulator and TV system images Android developers use. TeleTV downloads them on first launch under Google's Android SDK licence, which you accept during setup. Nothing is modified.</p></details>
+    <details><summary>Do Netflix, Prime Video and Disney+ work?</summary><p>No. Those apps require Google's certified-device checks for their video protection, and no Android emulator passes them. Most other video apps, media players and IPTV apps work.</p></details>
+    <details><summary>Why won't an app install?</summary><p>The most common reason is that the app is built only for ARM phone processors. TeleTV explains the reason when an install fails, in plain English.</p></details>
+    <details><summary>Does it work alongside Hyper-V, WSL or VirtualBox?</summary><p>Yes. TeleTV uses Windows Hypervisor Platform, which works alongside Hyper-V, WSL 2 and current versions of VirtualBox.</p></details>
+    <details><summary>Where are my files kept?</summary><p>Everything lives in <code>%LOCALAPPDATA%\TeleTV</code>. Uninstalling asks whether to remove it, so you can keep Android and your apps if you plan to reinstall.</p></details>
+  </div>
+</section>
+
+<div class="final">
+  <div class="wrap">
+    <h2>Turn your PC into a TV.</h2>
+    <div class="cta"><a class="btn primary" href="https://github.com/bhxuk/TeleTV/releases/latest/download/TeleTV-Setup.exe">Download TeleTV</a></div>
+    <p class="small"><a href="https://github.com/bhxuk/TeleTV/blob/main/docs/USER-GUIDE.md">User guide</a> · <a href="https://github.com/bhxuk/TeleTV/blob/main/CHANGELOG.md">What's new</a></p>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>TeleTV · MIT licence · Not affiliated with Google</span>
+    <span><a href="https://github.com/bhxuk/TeleTV">GitHub</a> · <a href="https://github.com/bhxuk/TeleTV/issues">Report a problem</a></span>
+  </div>
+</footer>
+</body>
+</html>

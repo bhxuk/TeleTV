@@ -45,6 +45,8 @@ namespace TeleTV.Core
         private static CancellationTokenSource _run;
         private static CancellationTokenSource _stream;
         private static int _grpcPort, _consolePort;
+        private static int _qemuPid;
+        private static DateTime _launcherExit;
         private static int _wantW, _wantH;
         private static readonly Queue<string> _tail = new Queue<string>();
         private static bool _stopping;
@@ -94,8 +96,10 @@ namespace TeleTV.Core
                 await Adb.StartServer();
                 await KillLeftovers();
 
-                _consolePort = Android.FreePort(5580);
+                _consolePort = Android.FreeConsolePort();
                 _grpcPort = Android.FreePort(8580);
+                _qemuPid = 0;
+                _launcherExit = DateTime.MinValue;
                 Adb.Serial = "emulator-" + _consolePort;
 
                 string gpu = Settings.Current.Graphics switch { "host" => "host", "software" => "swiftshader_indirect", _ => "auto" };
@@ -145,7 +149,7 @@ namespace TeleTV.Core
                 while (!booted)
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (_emu.HasExited) throw new Exception(ExitReason());
+                    if (!Alive()) throw new Exception(ExitReason());
                     if (DateTime.UtcNow > deadline) throw new Exception("Android took too long to start. Try Settings > Android TV > Restart Android, or switch Graphics to Software.");
                     try
                     {
@@ -193,27 +197,64 @@ namespace TeleTV.Core
         {
             string[] lines;
             lock (_tail) lines = _tail.ToArray();
-            string all = string.Join("\n", lines);
-            string a = all.ToLowerInvariant();
-            if (a.Contains("whpx") || a.Contains("hypervisor") || a.Contains("accel") && a.Contains("not"))
+            var errors = lines.Where(l => l.Contains("ERROR") || l.Contains("FATAL") || l.Contains("PANIC") || l.Contains("error:")).ToList();
+            string a = string.Join("\n", errors).ToLowerInvariant();
+            if (a.Contains("whpx") || a.Contains("hypervisor") || a.Contains("aehd") || a.Contains("accel") || a.Contains("vt-x") || a.Contains("svm"))
                 return "Windows Hypervisor Platform isn't available. Open Settings > Android TV and choose Fix virtualisation.";
-            if (a.Contains("not enough space") || a.Contains("no space")) return "The drive is full. Free some space and try again.";
-            if (a.Contains("opengl") || a.Contains("gpu") && a.Contains("fail"))
+            if (a.Contains("not enough space") || a.Contains("no space") || a.Contains("disk full"))
+                return "The drive is full. Free some space and try again.";
+            if (a.Contains("opengl") || a.Contains("vulkan") || a.Contains("gpu") || a.Contains("graphics"))
                 return "The graphics driver couldn't start Android. In Settings > Android TV set Graphics to Software.";
-            string err = lines.LastOrDefault(l => l.Contains("ERROR") || l.Contains("FATAL"));
+            if (a.Contains("is already running") || a.Contains("multiinstance"))
+                return "Another copy of this Android is still closing. Wait a few seconds and try again.";
+            string err = errors.LastOrDefault();
             return "Android stopped unexpectedly." + (err != null ? " " + err.Trim() : "");
+        }
+
+        /// <summary>emulator.exe can hand over to its qemu process, so Android is alive while either is running.</summary>
+        private static bool Alive()
+        {
+            var e = _emu;
+            if (e == null) return false;
+            if (!e.HasExited) return true;
+            if (_qemuPid > 0) return ProcessAlive(_qemuPid);
+            // The launcher has exited and we don't know about qemu yet: allow a short grace period if it exited cleanly.
+            try { return e.ExitCode == 0 && (DateTime.UtcNow - _launcherExit).TotalSeconds < 30; } catch { return false; }
+        }
+
+        private static bool ProcessAlive(int pid)
+        {
+            try
+            {
+                using var p = Process.GetProcessById(pid);
+                return !p.HasExited;
+            }
+            catch { return false; }
         }
 
         private static void OnEmulatorExited(object sender, EventArgs e)
         {
+            _launcherExit = DateTime.UtcNow;
             if (_stopping) return;
-            Log.Write("Emulator exited unexpectedly: " + ExitReason());
-            _stream?.Cancel();
-            if (State == EngineState.Running)
+            _ = Task.Run(async () =>
             {
-                LastError = ExitReason();
-                SetState(EngineState.Failed, LastError);
-            }
+                // Give a handed-over qemu process the chance to show up, then watch that instead.
+                for (int i = 0; i < 30 && _qemuPid == 0 && !_stopping; i++)
+                {
+                    var (pid, _) = ReadDiscovery(_grpcPort);
+                    if (pid > 0) _qemuPid = pid;
+                    else await Task.Delay(1000);
+                }
+                while (!_stopping && _qemuPid > 0 && ProcessAlive(_qemuPid)) await Task.Delay(2000);
+                if (_stopping) return;
+                Log.Write("Android exited unexpectedly: " + ExitReason());
+                _stream?.Cancel();
+                if (State == EngineState.Running)
+                {
+                    LastError = ExitReason();
+                    SetState(EngineState.Failed, LastError);
+                }
+            });
         }
 
         /// <summary>Waits for the emulator's control port, then connects with the access token it publishes.</summary>
@@ -223,10 +264,11 @@ namespace TeleTV.Core
             while (true)
             {
                 ct.ThrowIfCancellationRequested();
-                if (_emu.HasExited) throw new Exception(ExitReason());
+                if (!Alive()) throw new Exception(ExitReason());
                 if (DateTime.UtcNow > deadline) throw new Exception("Android didn't start. " + ExitReason());
 
-                string token = ReadToken(_emu.Id);
+                var (pid, token) = ReadDiscovery(_grpcPort);
+                if (pid > 0) _qemuPid = pid;
                 _auth = new Metadata();
                 if (!string.IsNullOrEmpty(token)) _auth.Add("authorization", "Bearer " + token);
 
@@ -253,8 +295,11 @@ namespace TeleTV.Core
             }
         }
 
-        /// <summary>The emulator writes its gRPC token to a discovery file named after its process id.</summary>
-        private static string ReadToken(int pid)
+        /// <summary>
+        /// The emulator writes a discovery file (pid_NNNN.ini, named after its qemu process) with its gRPC port and token.
+        /// Find the one for our port.
+        /// </summary>
+        private static (int pid, string token) ReadDiscovery(int port)
         {
             var dirs = new[]
             {
@@ -263,18 +308,29 @@ namespace TeleTV.Core
                 Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".android", "avd", "running"),
                 Path.Combine(Paths.AvdHome, "running")
             };
-            foreach (var d in dirs.Distinct())
+            foreach (var d in dirs.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
-                    string f = Path.Combine(d, "pid_" + pid + ".ini");
-                    if (!File.Exists(f)) continue;
-                    foreach (var line in File.ReadAllLines(f))
-                        if (line.StartsWith("grpc.token=")) return line.Substring(11).Trim();
+                    if (!Directory.Exists(d)) continue;
+                    foreach (var f in Directory.GetFiles(d, "pid_*.ini"))
+                    {
+                        string token = null;
+                        bool ours = false;
+                        foreach (var line in File.ReadAllLines(f))
+                        {
+                            if (line.StartsWith("grpc.token=")) token = line.Substring(11).Trim();
+                            else if (line.Trim() == "grpc.port=" + port) ours = true;
+                        }
+                        if (!ours) continue;
+                        string name = Path.GetFileNameWithoutExtension(f);
+                        int.TryParse(name.Substring(4), out int pid);
+                        return (pid, token);
+                    }
                 }
                 catch { }
             }
-            return null;
+            return (0, null);
         }
 
         /// <summary>Closes any emulator left over from a crash so the device name and files are free.</summary>
@@ -319,20 +375,15 @@ namespace TeleTV.Core
             try { _wheel?.Dispose(); } catch { }
             _wheel = null;
             var p = _emu;
-            if (p != null && !p.HasExited)
+            if (!force && Alive())
             {
-                if (!force)
-                {
-                    try { await Proc.Run(Paths.AdbExe, "-s " + Adb.Serial + " emu kill", 15000); } catch { }
-                    try
-                    {
-                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45)); // saving quick-start state can take a while
-                        await p.WaitForExitAsync(cts.Token);
-                    }
-                    catch { }
-                }
-                if (!p.HasExited) try { p.Kill(true); } catch { }
+                try { await Proc.Run(Paths.AdbExe, "-s " + Adb.Serial + " emu kill", 15000); } catch { }
+                // Saving the quick-start state can take a while.
+                for (int i = 0; i < 90 && Alive(); i++) await Task.Delay(500);
             }
+            if (p != null) try { if (!p.HasExited) p.Kill(true); } catch { }
+            if (_qemuPid > 0 && ProcessAlive(_qemuPid))
+                try { using var q = Process.GetProcessById(_qemuPid); q.Kill(true); } catch { }
             _emu = null;
             _channel?.Dispose();
             _channel = null;

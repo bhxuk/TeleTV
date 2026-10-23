@@ -216,6 +216,14 @@ namespace TeleTV.Core
                 try { File.Delete(Path.Combine(Paths.AvdDir, f)); } catch { }
         }
 
+        /// <summary>adb only finds emulators on console ports 5554 to 5584 by itself, so pick one in that range.</summary>
+        public static int FreeConsolePort()
+        {
+            foreach (int p in new[] { 5580, 5582, 5584 }.Concat(Enumerable.Range(0, 13).Select(i => 5554 + i * 2)))
+                if (IsFree(p) && IsFree(p + 1)) return p;
+            return 5580;
+        }
+
         public static int FreePort(int start)
         {
             for (int p = start; p < start + 200; p += 2)
