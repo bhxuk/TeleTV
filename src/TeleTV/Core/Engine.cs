@@ -488,12 +488,12 @@ namespace TeleTV.Core
             });
         }
 
-        /// <summary>A Windows virtual-key press or release.</summary>
-        public static void KeyWin(int vk, bool down) => SendKeyEvent(new KeyboardEvent
+        /// <summary>A key press or release by Windows scan code (0xE0xx for extended keys like the arrows).</summary>
+        public static void KeyScan(int scanCode, bool down) => SendKeyEvent(new KeyboardEvent
         {
             CodeType = KeyboardEvent.Types.KeyCodeType.Win,
             EventType = down ? KeyboardEvent.Types.KeyEventType.Keydown : KeyboardEvent.Types.KeyEventType.Keyup,
-            KeyCode = vk
+            KeyCode = scanCode
         });
 
         /// <summary>A named key such as GoBack, GoHome, AppSwitch, MediaPlayPause, ArrowUp, Enter.</summary>

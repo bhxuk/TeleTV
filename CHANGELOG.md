@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Fixed the keyboard inside Android: letters, Backspace and the arrow keys now type and move correctly (they were landing on the wrong keys, such as Backspace typing 7)
+- Media and volume keys now go to Android as play, pause, skip and volume
+
 ## 1.0.0
 
 - Android TV in a normal Windows window, with full screen on F11

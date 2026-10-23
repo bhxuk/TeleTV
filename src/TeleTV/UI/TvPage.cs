@@ -255,9 +255,38 @@ namespace TeleTV.UI
                     try { if (Clipboard.ContainsText()) Engine.SetClipboard(Clipboard.GetText()); } catch { }
                     break;
             }
+
+            // Media and volume keys have no keyboard position, so send them by name.
+            string named = key switch
+            {
+                Key.MediaPlayPause => "MediaPlayPause",
+                Key.MediaNextTrack => "MediaTrackNext",
+                Key.MediaPreviousTrack => "MediaTrackPrevious",
+                Key.MediaStop => "MediaStop",
+                Key.VolumeUp => "AudioVolumeUp",
+                Key.VolumeDown => "AudioVolumeDown",
+                Key.VolumeMute => "AudioVolumeMute",
+                _ => null
+            };
+            if (named != null)
+            {
+                if (down) Engine.KeyNamed(named);
+                return;
+            }
+
+            // The emulator wants Windows scan codes (where the key sits on the keyboard), not virtual-key numbers.
+            // Extended keys such as the arrows come back as 0xE0xx, which is the form it expects.
             int vk = KeyInterop.VirtualKeyFromKey(key);
-            if (vk > 0) Engine.KeyWin(vk, down);
+            if (vk <= 0) return;
+            int scan = (int)MapVirtualKey((uint)vk, MAPVK_VK_TO_VSC_EX);
+            if (scan > 0) Engine.KeyScan(scan, down);
+            else if (down) Log.Write("No scan code for key " + key);
         }
+
+        private const uint MAPVK_VK_TO_VSC_EX = 4;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
         private (int x, int y)? ToDevice(Point p)
         {
