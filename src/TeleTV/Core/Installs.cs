@@ -101,11 +101,15 @@ namespace TeleTV.Core
             Notify(item);
             try
             {
-                string error;
-                if (item.File.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))
-                    error = await Adb.Install(item.File);
-                else
-                    error = await InstallBundle(item.File);
+                // Go by what's inside the file, not its name: sites often hand out bundles named .apk,
+                // or a web page saved with an .apk name.
+                var (kind, why) = Inspect(item.File);
+                string error = kind switch
+                {
+                    FileKind.Apk => await Adb.Install(item.File),
+                    FileKind.Bundle => await InstallBundle(item.File),
+                    _ => why
+                };
 
                 if (error == null)
                 {
@@ -132,6 +136,38 @@ namespace TeleTV.Core
             }
         }
 
+        public enum FileKind { Apk, Bundle, NotApp }
+
+        /// <summary>Looks inside a file: a real APK, a bundle of split APKs, or something else (often a web page).</summary>
+        public static (FileKind kind, string why) Inspect(string file)
+        {
+            try
+            {
+                var head = new byte[512];
+                int n;
+                using (var fs = File.OpenRead(file)) n = fs.Read(head, 0, head.Length);
+                if (n < 4 || head[0] != (byte)'P' || head[1] != (byte)'K')
+                {
+                    string text = System.Text.Encoding.UTF8.GetString(head, 0, n).TrimStart().ToLowerInvariant();
+                    if (text.StartsWith("<!doctype") || text.StartsWith("<html") || text.Contains("<head") || text.Contains("<body"))
+                        return (FileKind.NotApp, "This download is a web page, not an app. The site sent its download page instead of the file. Open the page in the Downloader and press the site's own download button.");
+                    return (FileKind.NotApp, "This file isn't an Android app (it isn't an APK inside).");
+                }
+                using var zip = ZipFile.OpenRead(file);
+                if (zip.Entries.Any(e => e.FullName == "AndroidManifest.xml")) return (FileKind.Apk, null);
+                if (zip.Entries.Any(e => e.FullName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase))) return (FileKind.Bundle, null);
+                return (FileKind.NotApp, "This is a zip file, but there's no Android app inside it.");
+            }
+            catch (InvalidDataException)
+            {
+                return (FileKind.NotApp, "This file is damaged or didn't finish downloading. Download it again.");
+            }
+            catch (Exception ex)
+            {
+                return (FileKind.NotApp, "Couldn't read the file: " + ex.Message);
+            }
+        }
+
         /// <summary>.apks and .xapk files are zips of split APKs. Unpack the APKs and install them together.</summary>
         private static async Task<string> InstallBundle(string file)
         {
@@ -142,7 +178,10 @@ namespace TeleTV.Core
                 var apks = new List<string>();
                 using (var zip = System.IO.Compression.ZipFile.OpenRead(file))
                 {
-                    foreach (var e in zip.Entries.Where(e => e.FullName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase)))
+                    // Skip parts built for ARM processors; Android here runs on x86.
+                    foreach (var e in zip.Entries.Where(e => e.FullName.EndsWith(".apk", StringComparison.OrdinalIgnoreCase)
+                                                             && !e.Name.Contains("armeabi", StringComparison.OrdinalIgnoreCase)
+                                                             && !e.Name.Contains("arm64", StringComparison.OrdinalIgnoreCase)))
                     {
                         string dest = Path.Combine(dir, Path.GetFileName(e.FullName));
                         e.ExtractToFile(dest, true);

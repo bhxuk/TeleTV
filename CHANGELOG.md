@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+- Fixed the arrow keys, Enter and the other navigation keys inside Android; holding an arrow repeats like a remote
+- Installs now look inside the file instead of trusting its name: app bundles named .apk install properly, and parts built only for ARM are skipped
+- The Downloader spots when a site hands over a web page instead of the app, and says so instead of failing with a "parse" error
+- Downloads that are apps but saved without an .apk name are recognised and can be installed
+
 ## 1.0.1
 
 - Fixed the keyboard inside Android: letters, Backspace and the arrow keys now type and move correctly (they were landing on the wrong keys, such as Backspace typing 7)

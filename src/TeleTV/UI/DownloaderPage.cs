@@ -436,7 +436,31 @@ body{margin:0;background:#171B22;color:#E6EAF0;font-family:'Segoe UI',sans-serif
                 _bar.Foreground = Theme.Green;
                 long size = File.Exists(path) ? new FileInfo(path).Length : 0;
                 _actions.Children.Clear();
-                if (InstallQueue.IsApk(path))
+
+                // Judge the file by its contents. An app saved without an .apk name gets one; a web page saved as .apk gets a warning.
+                var (kind, why) = InstallQueue.Inspect(path);
+                if (kind != InstallQueue.FileKind.NotApp && !InstallQueue.IsApk(path))
+                {
+                    try
+                    {
+                        string renamed = Unique(Path.ChangeExtension(path, kind == InstallQueue.FileKind.Bundle ? ".xapk" : ".apk"));
+                        File.Move(path, renamed);
+                        path = renamed;
+                    }
+                    catch (Exception ex) { Log.Write("Couldn't rename download: " + ex.Message); }
+                }
+                if (kind == InstallQueue.FileKind.NotApp && InstallQueue.IsApk(path))
+                {
+                    _bar.Foreground = Theme.Orange;
+                    _title.Text = Path.GetFileName(path) + " isn't an app";
+                    _sub.Text = why;
+                    _sub.TextWrapping = TextWrapping.Wrap;
+                    _sub.Foreground = Theme.Orange;
+                    _actions.Children.Add(Theme.Btn("", "Ghost", (o, e) => page._cards.Children.Remove(this), Theme.GClose));
+                    try { File.Delete(path); } catch { }
+                    return;
+                }
+                if (kind != InstallQueue.FileKind.NotApp)
                 {
                     _title.Text = Path.GetFileName(path) + " downloaded";
                     _sub.Text = Format.Size(size) + " · Android app";

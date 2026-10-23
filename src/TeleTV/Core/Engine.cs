@@ -499,6 +499,13 @@ namespace TeleTV.Core
         /// <summary>A named key such as GoBack, GoHome, AppSwitch, MediaPlayPause, ArrowUp, Enter.</summary>
         public static void KeyNamed(string key) => SendKeyEvent(new KeyboardEvent { EventType = KeyboardEvent.Types.KeyEventType.Keypress, Key = key });
 
+        /// <summary>A named key held down or let go, so holding an arrow repeats like a remote.</summary>
+        public static void KeyNamed(string key, bool down) => SendKeyEvent(new KeyboardEvent
+        {
+            EventType = down ? KeyboardEvent.Types.KeyEventType.Keydown : KeyboardEvent.Types.KeyEventType.Keyup,
+            Key = key
+        });
+
         public static void Text(string text)
         {
             if (string.IsNullOrEmpty(text)) return;

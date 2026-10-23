@@ -274,6 +274,29 @@ namespace TeleTV.UI
                 return;
             }
 
+            // Arrows and the other navigation keys are "extended" keys the emulator doesn't take as scan codes,
+            // so they go by their standard names, pressed and released like a remote's D-pad.
+            string nav = key switch
+            {
+                Key.Up => "ArrowUp",
+                Key.Down => "ArrowDown",
+                Key.Left => "ArrowLeft",
+                Key.Right => "ArrowRight",
+                Key.Enter => "Enter",
+                Key.PageUp => "PageUp",
+                Key.PageDown => "PageDown",
+                Key.End => "End",
+                Key.Delete => "Delete",
+                Key.Insert => "Insert",
+                Key.Home => "Home",
+                _ => null
+            };
+            if (nav != null)
+            {
+                Engine.KeyNamed(nav, down);
+                return;
+            }
+
             // The emulator wants Windows scan codes (where the key sits on the keyboard), not virtual-key numbers.
             // Extended keys such as the arrows come back as 0xE0xx, which is the form it expects.
             int vk = KeyInterop.VirtualKeyFromKey(key);
