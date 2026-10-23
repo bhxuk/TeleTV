@@ -18,7 +18,7 @@ namespace TeleTV.UI
         private readonly Grid _cover = new Grid { Background = Theme.Bg };
         private readonly StackPanel _coverBody = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 560 };
         private WriteableBitmap _bitmap;
-        private Frame _latest;
+        private ScreenFrame _latest;
         private int _pendingDraw;
         private bool _flipChecked;
         private bool _flipped;
@@ -156,7 +156,7 @@ namespace TeleTV.UI
 
         // ---------------- Picture ----------------
 
-        private void OnFrame(Frame f)
+        private void OnFrame(ScreenFrame f)
         {
             Interlocked.Exchange(ref _latest, f);
             if (Interlocked.Exchange(ref _pendingDraw, 1) == 0)
@@ -179,7 +179,7 @@ namespace TeleTV.UI
         }
 
         /// <summary>The raw frame format doesn't say for sure which way up its rows are. Compare once with a PNG screenshot and flip if needed.</summary>
-        private async Task CheckRowOrder(Frame raw)
+        private async Task CheckRowOrder(ScreenFrame raw)
         {
             try
             {

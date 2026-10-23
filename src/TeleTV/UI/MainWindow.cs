@@ -24,7 +24,7 @@ namespace TeleTV.UI
         private readonly ContentControl _host = new ContentControl { Focusable = false };
         private readonly Dictionary<PageId, Button> _nav = new Dictionary<PageId, Button>();
         private readonly Dictionary<PageId, FrameworkElement> _pages = new Dictionary<PageId, FrameworkElement>();
-        private readonly Ellipse _dot = new Ellipse { Width = 8, Height = 8, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
+        private readonly System.Windows.Shapes.Ellipse _dot = new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
         private readonly TextBlock _statusText = Theme.T("", 12, Theme.Sub);
         private readonly TextBlock _footerLeft = Theme.T("", 12, Theme.Muted);
         private readonly TextBlock _footerRight = Theme.T("", 12, Theme.Muted);
@@ -110,7 +110,7 @@ namespace TeleTV.UI
             right.Children.Add(close);
             Grid.SetColumn(right, 2);
             _titleBar.Children.Add(right);
-            _titleBar.Children.Add(new Border { Height = 1, Background = Theme.Border, VerticalAlignment = VerticalAlignment.Bottom, IsHitTestVisible = false });
+            _titleBar.Children.Add(new Border { Height = 1, Background = Theme.Edge, VerticalAlignment = VerticalAlignment.Bottom, IsHitTestVisible = false });
             Grid.SetColumnSpan(_titleBar.Children[^1], 3);
 
             // ---- Footer ----
@@ -122,7 +122,7 @@ namespace TeleTV.UI
             fg.Children.Add(_footerLeft);
             Grid.SetColumn(_footerRight, 1);
             fg.Children.Add(_footerRight);
-            _footer = new Border { Height = 28, Background = Theme.Chrome, BorderBrush = Theme.Border, BorderThickness = new Thickness(0, 1, 0, 0), Child = fg };
+            _footer = new Border { Height = 28, Background = Theme.Chrome, BorderBrush = Theme.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = fg };
 
             // ---- Closing overlay ----
             _overlay = new Grid { Background = new SolidColorBrush(Color.FromArgb(0xE6, 0x0E, 0x11, 0x16)), Visibility = Visibility.Collapsed };

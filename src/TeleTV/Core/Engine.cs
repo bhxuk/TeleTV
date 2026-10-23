@@ -16,7 +16,7 @@ namespace TeleTV.Core
     public enum EngineState { NotInstalled, Stopped, Starting, Running, Stopping, Failed }
 
     /// <summary>One screen image from Android, as packed RGB (3 bytes a pixel).</summary>
-    public class Frame
+    public class ScreenFrame
     {
         public byte[] Pixels;
         public int Width;
@@ -31,7 +31,7 @@ namespace TeleTV.Core
         public static string LastError { get; private set; } = "";
 
         public static event Action StateChanged;
-        public static event Action<Frame> FrameReady;
+        public static event Action<ScreenFrame> FrameReady;
         /// <summary>Progress during start-up, for the loading screen.</summary>
         public static event Action<string> Status;
 
@@ -384,8 +384,8 @@ namespace TeleTV.Core
                         {
                             failures = 0;
                             int iw = (int)(img.Format?.Width ?? img.Width), ih = (int)(img.Format?.Height ?? img.Height);
-                            if (iw <= 0 || ih <= 0 || img.Image.Length < iw * ih * 3) continue;
-                            FrameReady?.Invoke(new Frame { Pixels = img.Image.ToByteArray(), Width = iw, Height = ih });
+                            if (iw <= 0 || ih <= 0 || img.Image_.Length < iw * ih * 3) continue;
+                            FrameReady?.Invoke(new ScreenFrame { Pixels = img.Image_.ToByteArray(), Width = iw, Height = ih });
                         }
                     }
                     catch (OperationCanceledException) { return; }
@@ -405,7 +405,7 @@ namespace TeleTV.Core
             var c = _client;
             if (c == null) return null;
             var img = await c.getScreenshotAsync(new ImageFormat { Format = ImageFormat.Types.ImgFormat.Png, Width = (uint)w, Height = (uint)h }, _auth, DateTime.UtcNow.AddSeconds(10));
-            return img.Image.ToByteArray();
+            return img.Image_.ToByteArray();
         }
 
         // ---------------- Input ----------------

@@ -22,7 +22,7 @@ namespace TeleTV.UI
         public static readonly Brush Surface = B("#171B22");
         public static readonly Brush Surface2 = B("#1E232C");
         public static readonly Brush Raised = B("#2A3140");
-        public static readonly Brush Border = B("#262B35");
+        public static readonly Brush Edge = B("#262B35");
         public static readonly Brush BorderStrong = B("#4A5363");
         public static readonly Brush Text = B("#E6EAF0");
         public static readonly Brush Sub = B("#B8C0CC");
@@ -343,7 +343,7 @@ namespace TeleTV.UI
         public static Border Card(UIElement child, Thickness? padding = null, Brush border = null) => new Border
         {
             Background = Surface,
-            BorderBrush = border ?? Border,
+            BorderBrush = border ?? Edge,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = padding ?? new Thickness(24),
@@ -423,7 +423,7 @@ namespace TeleTV.UI
             return g;
         }
 
-        public static Border Divider() => new Border { Height = 1, Background = Border, Margin = new Thickness(0, 16, 0, 16) };
+        public static Border Divider() => new Border { Height = 1, Background = Edge, Margin = new Thickness(0, 16, 0, 16) };
 
         public static ScrollViewer Scroll(UIElement content) => new ScrollViewer
         {

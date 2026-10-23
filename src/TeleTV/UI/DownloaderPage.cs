@@ -52,7 +52,7 @@ namespace TeleTV.UI
                 _tabs[tab] = b;
                 rail.Children.Add(b);
             }
-            var railBorder = new Border { Background = Theme.Rail, BorderBrush = Theme.Border, BorderThickness = new Thickness(0, 0, 1, 0), Child = rail };
+            var railBorder = new Border { Background = Theme.Rail, BorderBrush = Theme.Edge, BorderThickness = new Thickness(0, 0, 1, 0), Child = rail };
             Children.Add(railBorder);
 
             // ---- Main ----
@@ -134,7 +134,7 @@ namespace TeleTV.UI
             switch (tab)
             {
                 case Tab.Browser:
-                    _content.Children.Add(new Border { CornerRadius = new CornerRadius(12), BorderBrush = Theme.Border, BorderThickness = new Thickness(1), Background = Theme.Surface, ClipToBounds = true, Child = _browserHost });
+                    _content.Children.Add(new Border { CornerRadius = new CornerRadius(12), BorderBrush = Theme.Edge, BorderThickness = new Thickness(1), Background = Theme.Surface, ClipToBounds = true, Child = _browserHost });
                     _ = EnsureWeb();
                     break;
                 case Tab.Downloads:
@@ -358,7 +358,7 @@ body{margin:0;background:#171B22;color:#E6EAF0;font-family:'Segoe UI',sans-serif
                 }, Theme.GDelete));
                 Grid.SetColumn(actions, 1);
                 g.Children.Add(actions);
-                sp.Children.Add(new Border { Background = Theme.Surface, BorderBrush = Theme.Border, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 12, 12), Margin = new Thickness(0, 0, 0, 8), Child = g });
+                sp.Children.Add(new Border { Background = Theme.Surface, BorderBrush = Theme.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 12, 12), Margin = new Thickness(0, 0, 0, 8), Child = g });
             }
             return sp;
         }
@@ -386,7 +386,7 @@ body{margin:0;background:#171B22;color:#E6EAF0;font-family:'Segoe UI',sans-serif
                 }, Theme.GDelete);
                 Grid.SetColumn(del, 1);
                 g.Children.Add(del);
-                sp.Children.Add(new Border { Background = Theme.Surface, BorderBrush = Theme.Border, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 6, 8, 6), Margin = new Thickness(0, 0, 0, 8), Child = g });
+                sp.Children.Add(new Border { Background = Theme.Surface, BorderBrush = Theme.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 6, 8, 6), Margin = new Thickness(0, 0, 0, 8), Child = g });
             }
             return sp;
         }

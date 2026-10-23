@@ -125,7 +125,7 @@ namespace TeleTV.UI
                 Width = 270,
                 Margin = new Thickness(0, 0, 16, 16),
                 Background = Theme.Surface,
-                BorderBrush = Theme.Border,
+                BorderBrush = Theme.Edge,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(14),
                 Padding = new Thickness(18),

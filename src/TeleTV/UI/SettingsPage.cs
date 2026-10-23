@@ -42,7 +42,7 @@ namespace TeleTV.UI
                 _nav[s] = b;
                 rail.Children.Add(b);
             }
-            Children.Add(new Border { Background = Theme.Rail, BorderBrush = Theme.Border, BorderThickness = new Thickness(0, 0, 1, 0), Child = rail });
+            Children.Add(new Border { Background = Theme.Rail, BorderBrush = Theme.Edge, BorderThickness = new Thickness(0, 0, 1, 0), Child = rail });
             Grid.SetColumn(_host, 1);
             Children.Add(_host);
         }
@@ -78,7 +78,7 @@ namespace TeleTV.UI
             var sp = new StackPanel();
             for (int i = 0; i < rows.Length; i++)
             {
-                if (i > 0) sp.Children.Add(new Border { Height = 1, Background = Theme.Border, Margin = new Thickness(-24, 18, -24, 18) });
+                if (i > 0) sp.Children.Add(new Border { Height = 1, Background = Theme.Edge, Margin = new Thickness(-24, 18, -24, 18) });
                 sp.Children.Add(rows[i]);
             }
             var c = Theme.Card(sp);
