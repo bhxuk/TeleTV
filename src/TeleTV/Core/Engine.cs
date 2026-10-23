@@ -259,8 +259,8 @@ namespace TeleTV.Core
             var dirs = new[]
             {
                 Path.Combine(Path.GetTempPath(), "avd", "running"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp", "avd", "running"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".android", "avd", "running"),
+                Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "Temp", "avd", "running"),
+                Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".android", "avd", "running"),
                 Path.Combine(Paths.AvdHome, "running")
             };
             foreach (var d in dirs.Distinct())

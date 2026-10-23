@@ -42,9 +42,9 @@ namespace TeleTV.UI
             ((TextBlock)badge.Child).HorizontalAlignment = HorizontalAlignment.Center;
             rail.Children.Add(Theme.Row(10, badge, Theme.T("Downloader", 17, Theme.Text, FontWeights.Bold)));
             rail.Children[0].SetValue(MarginProperty, new Thickness(8, 0, 0, 18));
-            foreach (var (tab, label, glyph) in new[] { (Tab.Browser, "Browser", Theme.GGlobe), (Tab.Downloads, "Downloads", Theme.GDownload), (Tab.Favourites, "Favourites", Theme.GStar) })
+            foreach (var (tab, tabLabel, glyph) in new[] { (Tab.Browser, "Browser", Theme.GGlobe), (Tab.Downloads, "Downloads", Theme.GDownload), (Tab.Favourites, "Favourites", Theme.GStar) })
             {
-                var b = Theme.Btn(label, "Ghost", (o, e) => ShowTab(tab), glyph);
+                var b = Theme.Btn(tabLabel, "Ghost", (o, e) => ShowTab(tab), glyph);
                 b.HorizontalContentAlignment = HorizontalAlignment.Left;
                 b.Padding = new Thickness(14, 11, 14, 11);
                 b.FontSize = 15;
